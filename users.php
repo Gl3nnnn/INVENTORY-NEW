@@ -43,11 +43,15 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="text-muted"><?= (int)$users->num_rows ?> user(s)</div>
-        <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal">
-            <i data-lucide="user-plus"></i> Add User
-        </button>
+    <div class="assets-toolbar mb-3">
+        <div class="toolbar-left">
+            <div class="text-muted"><?= (int)$users->num_rows ?> user(s)</div>
+        </div>
+        <div class="toolbar-right">
+            <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal">
+                <i data-lucide="user-plus"></i> Add User
+            </button>
+        </div>
     </div>
 
     <div class="table-container">

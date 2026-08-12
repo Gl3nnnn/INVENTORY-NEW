@@ -26,6 +26,11 @@ $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
 $barcode = new TCPDF2DBarcode($qrCode, 'QRCODE,H');
 $pngData = $barcode->getBarcodePngData(4, 4, [0, 0, 0]);
 
+if ($pngData === false) {
+    $_SESSION['error'] = 'QR generation failed: the PHP GD extension is not enabled on this server.';
+    redirect('assets.php');
+}
+
 if (isset($_GET['embed']) && $_GET['embed'] === '1') {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!doctype html><html><head><meta charset="utf-8"><style>';
@@ -56,13 +61,15 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <div class="d-flex gap-2 mb-3">
-        <button type="button" class="btn btn-primary d-flex align-items-center gap-2" onclick="window.print()">
-            <i data-lucide="printer"></i> Print Label
-        </button>
-        <a href="assets.php" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-            <i data-lucide="arrow-left"></i> Back to Assets
-        </a>
+    <div class="assets-toolbar mb-3">
+        <div class="toolbar-left">
+            <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" onclick="window.print()">
+                <i data-lucide="printer"></i> Print Label
+            </button>
+            <a href="assets.php" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2">
+                <i data-lucide="arrow-left"></i> Back to Assets
+            </a>
+        </div>
     </div>
 
     <div class="row">

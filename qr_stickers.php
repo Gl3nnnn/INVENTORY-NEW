@@ -18,15 +18,19 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <div class="d-flex flex-wrap gap-2 mb-3">
-        <button type="button" class="btn btn-primary d-flex align-items-center gap-2" id="printStickersBtn">
-            <i data-lucide="printer"></i> Print / Download Stickers
-        </button>
-        <a href="assets.php" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-            <i data-lucide="hard-drive"></i> Back to Assets
-        </a>
-        <div class="text-muted align-self-center">
-            <?= $totalRows ?> asset<?= $totalRows === 1 ? '' : 's' ?> included
+    <div class="assets-toolbar mb-3">
+        <div class="toolbar-left">
+            <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" id="printStickersBtn">
+                <i data-lucide="printer"></i> Print / Download Stickers
+            </button>
+            <a href="assets.php" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2">
+                <i data-lucide="hard-drive"></i> Back to Assets
+            </a>
+        </div>
+        <div class="toolbar-right">
+            <div class="text-muted">
+                <?= $totalRows ?> asset<?= $totalRows === 1 ? '' : 's' ?> included
+            </div>
         </div>
     </div>
 
@@ -38,10 +42,21 @@ require __DIR__ . '/includes/header.php';
             $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
             $base   = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
             $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
+            $barcode = new TCPDF2DBarcode('', 'QRCODE,H');
             while ($row = $result->fetch_assoc()):
                 $qrCode = $base . $basePath . '/qr_view.php?id=' . (int)$row['id'];
-                $barcode = new TCPDF2DBarcode($qrCode, 'QRCODE,H');
+                $barcode->setBarcode($qrCode, 'QRCODE,H');
                 $pngData = $barcode->getBarcodePngData(4, 4, [0, 0, 0]);
+                if ($pngData === false):
+            ?>
+                    <div class="alert alert-danger">
+                        QR generation failed: the PHP GD extension is not enabled on this server.
+                    </div>
+                <?php
+                    $result->close();
+                    require __DIR__ . '/includes/footer.php';
+                    exit;
+                endif;
             ?>
                 <div class="sticker-card">
                     <div class="sticker-qr">

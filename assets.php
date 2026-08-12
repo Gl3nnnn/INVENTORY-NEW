@@ -62,6 +62,12 @@ $categories = asset_categories();
 $filterQs = http_build_query(array_diff_key($_GET, ['page' => 1, 'limit' => 1]));
 $filterQs = $filterQs === '' ? '' : '?' . $filterQs;
 
+// Active filter tracking for the toolbar Filters badge + auto-open behaviour.
+// Search lives in the toolbar, so typing it must not force the panel open.
+$nonSearchFilters = array_intersect_key($_GET, ['category' => 1, 'location' => 1, 'issued_to' => 1, 'status' => 1]);
+$hasNonSearchFilter = count($nonSearchFilters) > 0;
+$activeFilterCount = count($nonSearchFilters) + (!empty($_GET['search']) ? 1 : 0);
+
 // ---- Edit mode: load the asset to pre-fill the Add/Edit modal ----
 $editAsset = null;
 if (isset($_GET['edit'])) {
@@ -85,21 +91,33 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-                <!-- Toolbar -->
-    <div class="d-flex flex-column gap-1 mb-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div class="d-flex gap-2 align-items-center flex-wrap">
-                <?php if (is_admin()): ?>
-                    <button type="button" class="btn btn-primary d-flex align-items-center gap-2 toolbar-btn" data-bs-toggle="modal" data-bs-target="#assetModal">
-                        <i data-lucide="plus"></i> Add Asset
-                    </button>
-                <?php endif; ?>
-                <button type="button" class="btn btn-success d-flex align-items-center gap-2 toolbar-btn" id="printPreviewBtn">
+    <form method="get" action="assets.php" class="assets-toolbar-form">
+        <!-- Toolbar -->
+        <div class="assets-toolbar">
+            <div class="toolbar-left">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-box-icon"></i>
+                    <input type="text" name="search" id="searchInput" class="form-control"
+                           placeholder="Search assets..." value="<?= h($_GET['search'] ?? '') ?>"
+                           autocomplete="off">
+                </div>
+                <button type="button" class="btn btn-outline-secondary toolbar-btn toolbar-filter-btn"
+                        data-bs-toggle="collapse" data-bs-target="#filterPanel"
+                        aria-expanded="<?= $hasNonSearchFilter ? 'true' : 'false' ?>">
+                    <i data-lucide="filter" class="icon-sm"></i>
+                    <span>Filters</span>
+                    <?php if ($activeFilterCount > 0): ?>
+                        <span class="filter-count-badge"><?= $activeFilterCount ?></span>
+                    <?php endif; ?>
+                </button>
+            </div>
+            <div class="toolbar-right">
+                <button type="button" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2" id="printPreviewBtn">
                     <i data-lucide="printer"></i> Print
                 </button>
                 <?php if (is_admin()): ?>
                     <div class="dropdown">
-                        <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2 toolbar-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i data-lucide="file-text"></i> Export
                         </button>
                         <ul class="dropdown-menu">
@@ -115,38 +133,17 @@ require __DIR__ . '/includes/header.php';
                             </a></li>
                         </ul>
                     </div>
+                    <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#assetModal">
+                        <i data-lucide="plus"></i> Add Asset
+                    </button>
                 <?php endif; ?>
-            </div>
-            <form method="get" action="lookup.php" class="d-flex gap-1 align-items-center" id="searchForm">
-                <input type="text" name="code" class="form-control" placeholder="Scan / type property code..."
-                       value="<?= h($_GET['code'] ?? '') ?>">
-                <button type="submit" class="btn btn-outline-primary d-flex align-items-center gap-1 toolbar-btn" title="Lookup asset by code">
-                    <i data-lucide="qrcode" class="icon-sm"></i> Lookup
-                </button>
-            </form>
-            <div class="text-muted d-flex align-items-center gap-2">
-                <i data-lucide="search" class="icon-sm"></i>
-                <span>Total: <span class="asset-count"><?= $totalRows ?></span> assets found</span>
             </div>
         </div>
 
-    <!-- Filters -->
-    <div class="filters-card mb-3">
-        <div class="filters-header">
-            <button class="filter-toggle-btn" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
-                <i data-lucide="filter" class="icon-sm"></i>
-                <span>Filters</span>
-            </button>
-        </div>
-        <div class="collapse <?= count(array_intersect_key($_GET, ['search'=>1,'category'=>1,'location'=>1,'issued_to'=>1,'status'=>1])) ? 'show' : '' ?>" id="filterSection">
-            <div class="filters-content">
-                <form method="get" class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Search</label>
-                        <input type="text" name="search" id="searchInput" class="form-control"
-                               placeholder="Item, property code, location, issued to..."
-                               value="<?= h($_GET['search'] ?? '') ?>">
-                    </div>
+        <!-- Expandable filter panel -->
+        <div class="collapse <?= $hasNonSearchFilter ? 'show' : '' ?>" id="filterPanel">
+            <div class="filter-panel">
+                <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Item Category</label>
                         <select name="category" class="form-select">
@@ -199,24 +196,26 @@ require __DIR__ . '/includes/header.php';
                             <i data-lucide="x" class="icon-sm"></i><span>Clear Filters</span>
                         </a>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
-    </div>
+    </form>
 
-        <!-- Show / entries info -->
-    <div class="show-entries-bar d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-            <label class="form-label mb-0 show-entries-info">Show:</label>
+    <!-- Count row -->
+    <div class="asset-count-row">
+        <div class="asset-count-left">
+            <span class="asset-count-total"><?= $totalRows ?> assets</span>
+        </div>
+        <div class="asset-count-right">
+            <label class="show-entries-info">Show:</label>
             <select class="form-select form-select-sm" onchange="changeLimit(this.value)">
                 <?php foreach ([10, 25, 50, 100] as $n): ?>
                     <option value="<?= $n ?>" <?= $limit === $n ? 'selected' : '' ?>><?= $n ?></option>
                 <?php endforeach; ?>
             </select>
-            <span class="show-entries-info">entries per page</span>
-        </div>
-        <div class="show-entries-info">
-            Showing <?= $totalRows ? ($offset + 1) : 0 ?> to <?= min($offset + $limit, $totalRows) ?> of <?= $totalRows ?> entries
+            <span class="show-entries-info">
+                Showing <?= $totalRows ? ($offset + 1) : 0 ?> to <?= min($offset + $limit, $totalRows) ?> of <?= $totalRows ?>
+            </span>
         </div>
     </div>
 

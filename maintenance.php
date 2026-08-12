@@ -116,13 +116,15 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <div>
-            <button type="button" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#maintModal">
+    <div class="assets-toolbar mb-3">
+        <div class="toolbar-left">
+            <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#maintModal">
                 <i data-lucide="plus"></i> Add Maintenance
             </button>
         </div>
-        <div class="text-muted">Total: <strong><?= $totalRows ?></strong> record<?= $totalRows === 1 ? '' : 's' ?></div>
+        <div class="toolbar-right">
+            <div class="text-muted">Total: <strong><?= $totalRows ?></strong> record<?= $totalRows === 1 ? '' : 's' ?></div>
+        </div>
     </div>
 
     <!-- Filters -->

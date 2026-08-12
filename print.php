@@ -113,6 +113,14 @@ while ($row = $result->fetch_assoc()) {
            overflow visibly instead of clipping the bottom of the cell. */
         .inv-sheet.oversized { overflow: visible; }
         .inv-sheet.oversized .doc-table-wrap { overflow: visible; }
+        .inv-sheet { isolation: isolate; }
+        .doc-watermark {
+            position: absolute; right: 6mm; bottom: 10mm;
+            width: 100mm; height: auto;
+            opacity: 0.45; z-index: -1;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
 
         /* ---- header ---- */
         .doc-top { display: flex; align-items: flex-start; justify-content: space-between; }
@@ -261,6 +269,7 @@ while ($row = $result->fetch_assoc()) {
         var s = document.createElement('div');
         s.className = 'inv-sheet';
         s.innerHTML =
+            '<img class="doc-watermark" src="4.png" alt="">' +
             '<div class="doc-fixed">' + headerHtml + '</div>' +
             '<div class="doc-table-wrap"><table class="doc-table">' + theadHtml + '<tbody></tbody></table></div>' +
             sigHtml;

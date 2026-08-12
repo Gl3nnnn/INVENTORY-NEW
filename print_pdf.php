@@ -34,6 +34,7 @@ $C_FOOTER   = [85, 85, 85];     // #555555
 class InventoryPDF extends TCPDF
 {
     public $logoPath = '';
+    public $watermarkPath = '';
     public $docOrg            = DOC_ORG;
     public $docTitle          = DOC_TITLE;
     public $docId             = DOC_ID;
@@ -88,6 +89,13 @@ class InventoryPDF extends TCPDF
         $this->SetDrawColor(18, 58, 115);
         $this->Line(15, 39.5, 282, 39.5);
         $this->SetLineWidth(0.2);
+
+        // ---------------- Lower-right watermark (behind all content) ----------------
+        if ($this->watermarkPath) {
+            $this->setAlpha(0.45, 'Normal');
+            $this->Image($this->watermarkPath, 182, 92, 100, 0, 'PNG', '', '', false, 300, '', false, false, 0, false, false, false);
+            $this->setAlpha(1);
+        }
     }
 
     public function Footer()
@@ -104,6 +112,7 @@ class InventoryPDF extends TCPDF
 // ------------------------------------------------------------------
 $pdf = new InventoryPDF('L', 'mm', 'A4', true, 'UTF-8', false);
 $pdf->logoPath = realpath(__DIR__ . '/2.png') ?: '';
+$pdf->watermarkPath = realpath(__DIR__ . '/4.png') ?: '';
 $pdf->docOrg            = $doc_org;
 $pdf->docTitle          = $doc_title;
 $pdf->docId             = $doc_id;

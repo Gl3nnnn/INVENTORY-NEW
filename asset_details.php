@@ -36,21 +36,23 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <div class="d-flex gap-2 flex-wrap mb-3">
-        <?php if (is_admin()): ?>
-            <a href="assets.php?edit=<?= (int)$asset['id'] ?>" class="btn btn-primary d-flex align-items-center gap-2">
-                <i data-lucide="pencil"></i> Edit Asset
+    <div class="assets-toolbar mb-3">
+        <div class="toolbar-left">
+            <?php if (is_admin()): ?>
+                <a href="assets.php?edit=<?= (int)$asset['id'] ?>" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2">
+                    <i data-lucide="pencil"></i> Edit Asset
+                </a>
+                <a href="maintenance.php?asset_id=<?= (int)$asset['id'] ?>" class="btn btn-outline-primary toolbar-btn d-flex align-items-center gap-2">
+                    <i data-lucide="wrench"></i> Add Maintenance
+                </a>
+            <?php endif; ?>
+            <a href="qr.php?id=<?= (int)$asset['id'] ?>" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2" target="_blank">
+                <i data-lucide="qrcode"></i> QR Label
             </a>
-            <a href="maintenance.php?asset_id=<?= (int)$asset['id'] ?>" class="btn btn-outline-primary d-flex align-items-center gap-2">
-                <i data-lucide="wrench"></i> Add Maintenance
+            <a href="assets.php" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2">
+                <i data-lucide="arrow-left"></i> Back
             </a>
-        <?php endif; ?>
-        <a href="qr.php?id=<?= (int)$asset['id'] ?>" class="btn btn-outline-secondary d-flex align-items-center gap-2" target="_blank">
-            <i data-lucide="qrcode"></i> QR Label
-        </a>
-        <a href="assets.php" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-            <i data-lucide="arrow-left"></i> Back
-        </a>
+        </div>
     </div>
 
     <div class="row g-4">

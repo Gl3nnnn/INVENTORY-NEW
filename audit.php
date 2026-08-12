@@ -102,13 +102,17 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <div class="text-muted">Showing <?= $totalRows ? ($offset + 1) : 0 ?> to <?= min($offset + $limit, $totalRows) ?> of <?= $totalRows ?> entries</div>
-        <select class="form-select form-select-sm" style="width: 90px;" onchange="changeLimit(this.value)">
+    <div class="assets-toolbar mb-3">
+        <div class="toolbar-left">
+            <div class="text-muted">Showing <?= $totalRows ? ($offset + 1) : 0 ?> to <?= min($offset + $limit, $totalRows) ?> of <?= $totalRows ?> entries</div>
+        </div>
+        <div class="toolbar-right">
+            <select class="form-select form-select-sm" style="width: 90px;" onchange="changeLimit(this.value)">
             <?php foreach ([25, 50, 100, 200] as $n): ?>
                 <option value="<?= $n ?>" <?= $limit === $n ? 'selected' : '' ?>><?= $n ?></option>
             <?php endforeach; ?>
         </select>
+        </div>
     </div>
 
     <div class="table-container">
