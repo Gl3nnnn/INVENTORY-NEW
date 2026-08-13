@@ -5,8 +5,44 @@ require __DIR__ . '/includes/filters.php';
 require_once __DIR__ . '/vendor/tcpdf/tcpdf_barcodes_2d.php';
 
 $pageTitle = 'QR Stickers';
-$result = fetch_filtered_assets($conn, 'id ASC');
-$totalRows = $result->num_rows;
+
+$rows = [];
+
+// Explicit selection (?ids=1,2,3) takes precedence; otherwise fall back to the
+// same filters used by the assets page / print.php.
+$idsParam = isset($_GET['ids']) ? trim((string)$_GET['ids']) : '';
+if ($idsParam !== '') {
+    $ids = [];
+    foreach (preg_split('/[,;]/', $idsParam) as $part) {
+        $n = (int)trim($part);
+        if ($n > 0) {
+            $ids[$n] = $n;
+        }
+    }
+    $ids = array_values($ids);
+    if (count($ids) > 1000) {
+        $ids = array_slice($ids, 0, 1000);
+    }
+    if (count($ids) > 0) {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $orderBy = implode(',', $ids);
+        $sql = "SELECT * FROM it_asset_inventory
+                WHERE id IN ($placeholders)
+                ORDER BY FIELD(id, $orderBy)";
+        $res = run_query($conn, $sql, $ids);
+        while ($row = $res->fetch_assoc()) {
+            $rows[] = $row;
+        }
+    }
+} else {
+    $res = fetch_filtered_assets($conn, 'id ASC');
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = $row;
+    }
+}
+
+$totalRows = count($rows);
+$autoPrint = (isset($_GET['autoprint']) && (int)$_GET['autoprint'] === 1);
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -43,7 +79,7 @@ require __DIR__ . '/includes/header.php';
             $base   = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
             $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? '/'), '/\\');
             $barcode = new TCPDF2DBarcode('', 'QRCODE,H');
-            while ($row = $result->fetch_assoc()):
+            foreach ($rows as $row):
                 $qrCode = $base . $basePath . '/qr_view.php?id=' . (int)$row['id'];
                 $barcode->setBarcode($qrCode, 'QRCODE,H');
                 $pngData = $barcode->getBarcodePngData(4, 4, [0, 0, 0]);
@@ -53,7 +89,6 @@ require __DIR__ . '/includes/header.php';
                         QR generation failed: the PHP GD extension is not enabled on this server.
                     </div>
                 <?php
-                    $result->close();
                     require __DIR__ . '/includes/footer.php';
                     exit;
                 endif;
@@ -68,7 +103,7 @@ require __DIR__ . '/includes/header.php';
                         <div class="sticker-location"><?= h($row['location']) ?></div>
                     </div>
                 </div>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
@@ -156,6 +191,11 @@ require __DIR__ . '/includes/header.php';
     document.getElementById('printStickersBtn').addEventListener('click', function () {
         window.print();
     });
+    <?php if ($autoPrint): ?>
+    window.addEventListener('load', function () {
+        setTimeout(function () { window.print(); }, 400);
+    });
+    <?php endif; ?>
     </script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

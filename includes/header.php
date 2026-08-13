@@ -68,9 +68,6 @@ $userPages   = ['users.php', 'add_user.php', 'edit_user.php'];
       <a class="nav-link <?= in_array($currentPage, $assetPages) ? 'active' : '' ?>" href="assets.php">
         <i data-lucide="hard-drive"></i><span>Assets</span>
       </a>
-      <a class="nav-link <?= $currentPage === 'qr_stickers.php' ? 'active' : '' ?>" href="qr_stickers.php">
-        <i class="bi bi-qr-code"></i><span>QR Stickers</span>
-      </a>
       <a class="nav-link <?= in_array($currentPage, $userPages) ? 'active' : '' ?>" href="users.php">
         <i data-lucide="users"></i><span>Users</span>
       </a>

@@ -129,15 +129,6 @@ require __DIR__ . '/includes/header.php';
             </a>
         </div>
         <div class="col-sm-6 col-md-3">
-            <a href="qr_stickers.php" class="dashboard-action-card">
-                <div>
-                    <h3>QR Stickers</h3>
-                    <p>Generate codes for fast asset lookup and printing.</p>
-                </div>
-                <i class="bi bi-qr-code"></i>
-            </a>
-        </div>
-        <div class="col-sm-6 col-md-3">
             <a href="users.php" class="dashboard-action-card">
                 <div>
                     <h3>Users</h3>

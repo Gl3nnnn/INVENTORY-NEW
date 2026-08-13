@@ -54,7 +54,7 @@ $pageTitle = 'QR Label - ' . ($asset['property_code'] ?? 'Asset');
 require __DIR__ . '/includes/header.php';
 ?>
     <div class="page-header">
-        <div class="page-icon"><i data-lucide="qrcode"></i></div>
+        <div class="page-icon"><i data-lucide="qr-code"></i></div>
         <div>
             <h2>QR Label</h2>
             <p class="page-subtitle"><?= h($asset['property_code']) ?> &middot; <?= h($asset['items']) ?></p>

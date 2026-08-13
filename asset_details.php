@@ -47,7 +47,7 @@ require __DIR__ . '/includes/header.php';
                 </a>
             <?php endif; ?>
             <a href="qr.php?id=<?= (int)$asset['id'] ?>" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2" target="_blank">
-                <i data-lucide="qrcode"></i> QR Label
+                <i data-lucide="qr-code"></i> QR Label
             </a>
             <a href="assets.php" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2">
                 <i data-lucide="arrow-left"></i> Back

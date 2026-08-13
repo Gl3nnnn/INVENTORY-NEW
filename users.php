@@ -48,7 +48,7 @@ require __DIR__ . '/includes/header.php';
             <div class="text-muted"><?= (int)$users->num_rows ?> user(s)</div>
         </div>
         <div class="toolbar-right">
-            <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal">
+            <button type="button" id="addUserBtn" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#userModal">
                 <i data-lucide="user-plus"></i> Add User
             </button>
         </div>
@@ -106,15 +106,13 @@ require __DIR__ . '/includes/header.php';
                 <form method="post" action="user_save.php">
                     <div class="modal-header">
                         <h5 class="modal-title">
-                            <i data-lucide="<?= $editUser ? 'pencil' : 'user-plus' ?>"></i>
-                            <?= $editUser ? 'Edit User' : 'Add User' ?>
+                            <i id="userModalTitleIcon" data-lucide="<?= $editUser ? 'pencil' : 'user-plus' ?>"></i>
+                            <span id="userModalTitleText"><?= $editUser ? 'Edit User' : 'Add User' ?></span>
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <?php if ($editUser): ?>
-                            <input type="hidden" name="id" value="<?= (int)$editUser['id'] ?>">
-                        <?php endif; ?>
+                        <input type="hidden" name="id" id="userIdInput" value="<?= (int)($editUser['id'] ?? 0) ?>">
                         <?= csrf_field() ?>
                         <div class="mb-3">
                             <label class="form-label">Username</label>
@@ -127,8 +125,8 @@ require __DIR__ . '/includes/header.php';
                                    value="<?= h($editUser['display_name'] ?? '') ?>">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Password <?= $editUser ? '(leave blank to keep current)' : '' ?></label>
-                            <input type="password" class="form-control" name="password"
+                            <label class="form-label" id="pwLabel">Password<?= $editUser ? ' (leave blank to keep current)' : '' ?></label>
+                            <input type="password" class="form-control" name="password" id="pwInput"
                                    <?= $editUser ? '' : 'required' ?>>
                             <div class="form-text">At least 8 characters, containing letters and numbers.</div>
                         </div>
@@ -178,13 +176,43 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <script>
+    document.getElementById('addUserBtn').addEventListener('click', function () {
+        const modalEl = document.getElementById('userModal');
+        if (!modalEl) return;
+
+        const un = modalEl.querySelector('input[name="username"]');
+        const dn = modalEl.querySelector('input[name="display_name"]');
+        const pw = modalEl.querySelector('input[name="password"]');
+        const role = modalEl.querySelector('select[name="role"]');
+        const idInput = document.getElementById('userIdInput');
+        const titleText = document.getElementById('userModalTitleText');
+        const titleIcon = document.getElementById('userModalTitleIcon');
+        const pwLabel = document.getElementById('pwLabel');
+
+        if (un) un.value = '';
+        if (dn) dn.value = '';
+        if (pw) { pw.value = ''; pw.required = true; }
+        if (role) role.value = 'staff';
+        if (idInput) idInput.value = '';
+        if (titleText) titleText.textContent = 'Add User';
+        if (titleIcon) titleIcon.setAttribute('data-lucide', 'user-plus');
+        if (pwLabel) pwLabel.textContent = 'Password';
+        if (window.lucide && lucide.createIcons) lucide.createIcons();
+        if (window.history && history.replaceState) history.replaceState(null, '', 'users.php');
+    });
+
     function openUserDelete(id, name) {
         document.getElementById('delUserId').value = id;
         document.getElementById('delUserName').textContent = name;
         new bootstrap.Modal(document.getElementById('userDeleteModal')).show();
     }
     <?php if ($editUser): ?>
-    new bootstrap.Modal(document.getElementById('userModal')).show();
+    document.addEventListener('DOMContentLoaded', function () {
+        const userModalEl = document.getElementById('userModal');
+        if (userModalEl) {
+            new bootstrap.Modal(userModalEl).show();
+        }
+    });
     <?php endif; ?>
     </script>
 

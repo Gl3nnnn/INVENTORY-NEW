@@ -62,6 +62,12 @@ $categories = asset_categories();
 $filterQs = http_build_query(array_diff_key($_GET, ['page' => 1, 'limit' => 1]));
 $filterQs = $filterQs === '' ? '' : '?' . $filterQs;
 
+// Query string for the XLSX export link — always starts with '?' so it works
+// even when no filters are active.
+$exportQs = array_diff_key($_GET, ['page' => 1, 'limit' => 1]);
+$exportQs['format'] = 'xlsx';
+$xlsxQs = '?' . http_build_query($exportQs);
+
 // Active filter tracking for the toolbar Filters badge + auto-open behaviour.
 // Search lives in the toolbar, so typing it must not force the panel open.
 $nonSearchFilters = array_intersect_key($_GET, ['category' => 1, 'location' => 1, 'issued_to' => 1, 'status' => 1]);
@@ -115,6 +121,12 @@ require __DIR__ . '/includes/header.php';
                 <button type="button" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2" id="printPreviewBtn">
                     <i data-lucide="printer"></i> Print
                 </button>
+                <button type="button" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2" id="labelsBtn">
+                    <i data-lucide="tag"></i> Print Labels
+                </button>
+                <button type="button" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2" id="qrLabelsBtn">
+                    <i data-lucide="qr-code"></i> QR Labels
+                </button>
                 <?php if (is_admin()): ?>
                     <div class="dropdown">
                         <button type="button" class="btn btn-outline-secondary toolbar-btn d-flex align-items-center gap-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -124,7 +136,7 @@ require __DIR__ . '/includes/header.php';
                             <li><a class="dropdown-item d-flex align-items-center gap-2" href="export.php<?= h($filterQs) ?>">
                                 <i data-lucide="file-text" class="icon-sm"></i> Export CSV
                             </a></li>
-                            <li><a class="dropdown-item d-flex align-items-center gap-2" href="export.php<?= h($filterQs) ?>&format=xlsx">
+                            <li><a class="dropdown-item d-flex align-items-center gap-2" href="export.php<?= h($xlsxQs) ?>">
                                 <i data-lucide="table" class="icon-sm"></i> Export Excel (XLSX)
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -224,7 +236,10 @@ require __DIR__ . '/includes/header.php';
         <div class="table-responsive">
             <table class="assets-table">
                 <thead>
-                    <tr>
+                <tr>
+                        <th style="width:38px" class="col-select">
+                            <input type="checkbox" class="form-check-input" id="selectAllCheck" title="Select all on this page">
+                        </th>
                         <th><?= $sortLink('id', 'ID') ?></th>
                         <th><?= $sortLink('items', 'Model') ?></th>
                         <th><?= $sortLink('location', 'Location') ?></th>
@@ -245,6 +260,9 @@ require __DIR__ . '/includes/header.php';
                             $prefix = category_prefix_from_code($row['property_code']);
                         ?>
                                                                                 <tr>
+                                <td class="col-select">
+                                    <input type="checkbox" class="form-check-input row-select" value="<?= (int)$row['id'] ?>">
+                                </td>
                                 <td><?= (int)$row['id'] ?></td>
                                 <td><strong><?= h($row['items']) ?></strong></td>
                                 <td><?= h($row['location']) ?></td>
@@ -276,15 +294,6 @@ require __DIR__ . '/includes/header.php';
                                            data-status="<?= h($row['status'] ?? 'Active') ?>">
                                             <i data-lucide="eye"></i><span>View</span>
                                         </a>
-                                        <a href="qr.php?id=<?= (int)$row['id'] ?>" class="action-btn qr qr-action" title="QR Label"
-                                           data-id="<?= (int)$row['id'] ?>"
-                                           data-items="<?= h($row['items']) ?>"
-                                           data-property-code="<?= h($row['property_code']) ?>"
-                                           data-location="<?= h($row['location']) ?>"
-                                           data-issued-to="<?= h($row['issued_to']) ?>"
-                                           data-status="<?= h($row['status'] ?? 'Active') ?>">
-                                            <i data-lucide="qrcode"></i><span>QR</span>
-                                        </a>
                                         <a href="assets.php?edit=<?= (int)$row['id'] ?>&<?= h(keep_query(['edit', 'page'])) ?>" class="action-btn edit edit-action" title="Edit"
                                            data-id="<?= (int)$row['id'] ?>"
                                            data-items="<?= h($row['items']) ?>"
@@ -310,7 +319,7 @@ require __DIR__ . '/includes/header.php';
                                                 <?php endwhile; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="<?= is_admin() ? 12 : 11 ?>" class="empty-state">
+                            <td colspan="<?= is_admin() ? 13 : 12 ?>" class="empty-state">
                                 <i data-lucide="inbox" class="icon-lg"></i>
                                 <p class="mt-2">No assets match your current filters.</p>
                                 <a href="assets.php" class="btn btn-outline-secondary btn-sm mt-2">
@@ -411,29 +420,7 @@ require __DIR__ . '/includes/header.php';
         </div>
     </div>
 
-    <!-- QR Label Modal -->
-    <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i data-lucide="qrcode"></i> QR Label Preview</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary" role="status" id="qrLoadingSpinner"><span class="visually-hidden">Loading...</span></div>
-                        <p class="text-muted mt-3 mb-0" id="qrModalStatus">Loading QR label...</p>
-                        <div class="qr-iframe-wrapper ratio ratio-1x1 mt-4 d-none" id="qrIframeWrapper"></div>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-between">
-                    <a href="#" id="qrOpenPageLink" class="btn btn-outline-secondary">Open Full QR Page</a>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Edit / Add Asset Modal -->
     <?php if (is_admin()): ?>
     <?php
     $editId       = $editAsset['id'] ?? 0;
@@ -647,6 +634,49 @@ require __DIR__ . '/includes/header.php';
         window.open(url.toString(), '_blank');
     });
 
+    // "Print Labels": open labels.php with the checked rows, or fall back to the
+    // current filters when nothing is selected (same behaviour as the Print button).
+    const selectAllCheck = document.getElementById('selectAllCheck');
+    if (selectAllCheck) {
+        selectAllCheck.addEventListener('change', function () {
+            document.querySelectorAll('.row-select').forEach(function (cb) {
+                cb.checked = selectAllCheck.checked;
+            });
+        });
+    }
+
+    document.getElementById('labelsBtn').addEventListener('click', function () {
+        const selected = Array.prototype.slice
+            .call(document.querySelectorAll('.row-select:checked'))
+            .map(function (cb) { return cb.value; });
+        const base = window.location.pathname.replace(/[^/]*$/, '');
+        const url = new URL(base + 'labels.php', window.location.origin);
+        if (selected.length > 0) {
+            url.searchParams.set('ids', selected.join(','));
+        } else {
+            url.search = window.location.search;
+        }
+        url.searchParams.set('autoprint', '1');
+        window.open(url.toString(), '_blank');
+    });
+
+    // "QR Labels": open qr_stickers.php with the checked rows, or fall back to the
+    // current filters when nothing is selected (same behaviour as Print Labels).
+    document.getElementById('qrLabelsBtn').addEventListener('click', function () {
+        const selected = Array.prototype.slice
+            .call(document.querySelectorAll('.row-select:checked'))
+            .map(function (cb) { return cb.value; });
+        const base = window.location.pathname.replace(/[^/]*$/, '');
+        const url = new URL(base + 'qr_stickers.php', window.location.origin);
+        if (selected.length > 0) {
+            url.searchParams.set('ids', selected.join(','));
+        } else {
+            url.search = window.location.search;
+        }
+        url.searchParams.set('autoprint', '1');
+        window.open(url.toString(), '_blank');
+    });
+
     // N/A checkbox toggles the Acquisition Date field
     const acqInput = document.getElementById('acquisition_date');
     const acqNa = document.getElementById('acq_na');
@@ -750,13 +780,6 @@ require __DIR__ . '/includes/header.php';
         });
     });
 
-    document.querySelectorAll('.qr-action').forEach(function (link) {
-        link.addEventListener('click', function (event) {
-            event.preventDefault();
-            openQrModal(link);
-        });
-    });
-
     function openViewModal(link) {
         const getText = function (id, value) {
             const el = document.getElementById(id);
@@ -782,53 +805,6 @@ require __DIR__ . '/includes/header.php';
         if (window.lucide) {
             lucide.replace({ parent: document.getElementById('viewModal') });
         }
-    }
-
-    function openQrModal(link) {
-        const wrapper = document.getElementById('qrIframeWrapper');
-        const spinner = document.getElementById('qrLoadingSpinner');
-        const status = document.getElementById('qrModalStatus');
-        const openPageLink = document.getElementById('qrOpenPageLink');
-        if (openPageLink) {
-            openPageLink.href = 'qr.php?id=' + encodeURIComponent(link.dataset.id || '');
-            openPageLink.target = '_blank';
-        }
-        if (wrapper) {
-            wrapper.innerHTML = '';
-            wrapper.classList.add('d-none');
-        }
-        if (spinner) {
-            spinner.classList.remove('d-none');
-        }
-        if (status) {
-            status.textContent = 'Loading QR label...';
-        }
-
-        const iframe = document.createElement('iframe');
-        iframe.src = 'qr.php?id=' + encodeURIComponent(link.dataset.id || '') + '&embed=1';
-        iframe.className = 'w-100 border-0';
-        iframe.style.minHeight = '360px';
-        iframe.onload = function () {
-            if (spinner) spinner.classList.add('d-none');
-            if (status) status.textContent = '';
-            if (wrapper) wrapper.classList.remove('d-none');
-        };
-        if (wrapper) {
-            wrapper.appendChild(iframe);
-        }
-        new bootstrap.Modal(document.getElementById('qrModal')).show();
-    }
-
-    const qrModalEl = document.getElementById('qrModal');
-    if (qrModalEl) {
-        qrModalEl.addEventListener('hidden.bs.modal', function () {
-            const wrapper = document.getElementById('qrIframeWrapper');
-            if (wrapper) wrapper.innerHTML = '';
-            const spinner = document.getElementById('qrLoadingSpinner');
-            if (spinner) spinner.classList.remove('d-none');
-            const status = document.getElementById('qrModalStatus');
-            if (status) status.textContent = 'Loading QR label...';
-        });
     }
 
     // Live preview of the stored "LABEL (model)" format
