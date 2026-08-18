@@ -57,6 +57,8 @@ function asset_categories(): array
         'CAM' => ['label' => 'Webcam',           'lifespan' => '3-5 years'],
         'HST' => ['label' => 'Headset',          'lifespan' => '2-3 years'],
         'SIG' => ['label' => 'Signal Booster',   'lifespan' => '3-5 years'],
+        'INT' => ['label' => 'Intercom',         'lifespan' => '5-10 years'],
+        'TEL' => ['label' => 'Telephone',        'lifespan' => '5-10 years'],
     ];
 }
 
