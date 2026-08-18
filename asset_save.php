@@ -38,9 +38,22 @@ if ($category !== '' && isset($cats[$category])) {
     }
 }
 
-// Auto-generate the property code when adding and none was provided
+// Auto-generate the property code when adding and none was provided.
+// When editing, never silently re-number: preserve the existing code.
 if ($propertyCode === '') {
-    if ($category !== '' && isset($cats[$category])) {
+    if ($editId > 0) {
+        $stmt = $conn->prepare("SELECT property_code FROM it_asset_inventory WHERE id = ?");
+        $stmt->bind_param('i', $editId);
+        $stmt->execute();
+        $oldCode = ($r = $stmt->get_result()->fetch_assoc()) ? (string)$r['property_code'] : '';
+        $stmt->close();
+        if ($oldCode !== '') {
+            $propertyCode = $oldCode;
+        } else {
+            $_SESSION['error'] = 'Please provide a property code.';
+            redirect('assets.php');
+        }
+    } elseif ($category !== '' && isset($cats[$category])) {
         $propertyCode = next_property_code($conn, $category);
     } else {
         $_SESSION['error'] = 'Please select a category or provide a property code.';

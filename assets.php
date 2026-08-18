@@ -145,7 +145,7 @@ require __DIR__ . '/includes/header.php';
                             </a></li>
                         </ul>
                     </div>
-                    <button type="button" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#assetModal">
+                    <button type="button" id="addAssetBtn" class="btn btn-primary toolbar-btn d-flex align-items-center gap-2">
                         <i data-lucide="plus"></i> Add Asset
                     </button>
                 <?php endif; ?>
@@ -691,13 +691,21 @@ require __DIR__ . '/includes/header.php';
     const assetCodeInput = document.getElementById('property_code');
     const assetLifeInput = document.getElementById('life_span');
     if (assetCatSelect) {
-        const isEdit = <?= $editAsset ? 'true' : 'false' ?>;
         assetCatSelect.addEventListener('change', function () {
             const prefix = this.value;
             if (!prefix) return;
+            // Determine edit vs add mode at runtime. A value > 0 in the hidden
+            // #assetIdInput means an existing asset is being edited (whether the
+            // page was loaded via ?edit= or the row's Edit button on the listing
+            // page). Zero/empty means a brand-new asset -> keep auto-filling.
+            const idInput = document.getElementById('assetIdInput');
+            const isEdit  = !!(idInput && parseInt(idInput.value, 10) > 0);
             fetch('api_next_code.php?cat=' + encodeURIComponent(prefix))
                 .then(r => r.json())
                 .then(data => {
+                    // Only overwrite the code when adding, or when the user has
+                    // deliberately cleared the field. Never clobber the existing
+                    // code of an asset being edited.
                     if (!isEdit || assetCodeInput.value.trim() === '') {
                         assetCodeInput.value = data.code || '';
                     }
@@ -826,6 +834,49 @@ require __DIR__ . '/includes/header.php';
         modelInput.addEventListener('input', updatePreview);
         if (assetCatSelect) assetCatSelect.addEventListener('change', updatePreview);
         updatePreview();
+    }
+
+    // "Add Asset": reset the shared Add/Edit modal to blank add-mode defaults so it
+    // never carries over values (like the property code) from a previous Edit session.
+    const addAssetBtn = document.getElementById('addAssetBtn');
+    if (addAssetBtn) {
+        addAssetBtn.addEventListener('click', function () {
+            const setVal = function (id, val) {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+            setVal('assetIdInput', '');
+            setVal('items', '');
+            setVal('category', '');
+            setVal('location', '');
+            setVal('issued_to', '');
+            setVal('status', 'Active');
+            setVal('property_code', '');
+            setVal('life_span', '');
+            setVal('acquisition_date', '');
+            setVal('disposal_method', 'N/A');
+            setVal('remarks', '');
+
+            const acqNa = document.getElementById('acq_na');
+            if (acqNa) acqNa.checked = false;
+            syncAcq();
+
+            const preview = document.getElementById('itemsPreview');
+            if (preview) preview.textContent = '';
+
+            const titleIcon = document.getElementById('assetModalTitleIcon');
+            if (titleIcon) titleIcon.setAttribute('data-lucide', 'plus');
+            const titleText = document.getElementById('assetModalTitleText');
+            if (titleText) titleText.textContent = 'Add New Asset';
+            const submitBtn = document.querySelector('#assetModal button[type="submit"]');
+            if (submitBtn) submitBtn.innerHTML = '<i data-lucide="plus"></i> Add Asset';
+
+            const modalEl = document.getElementById('assetModal');
+            if (modalEl) {
+                new bootstrap.Modal(modalEl).show();
+                if (window.lucide) lucide.replace({ parent: modalEl });
+            }
+        });
     }
 
     <?php if ($editAsset): ?>
